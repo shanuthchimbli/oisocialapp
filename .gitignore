@@ -1,0 +1,18 @@
+# OS & IDE
+.DS_Store
+.idea/
+*.iml
+.vscode/
+
+# Gradle & Build Artifacts
+.gradle/
+build/
+*/build/
+*/*/build/
+*/*/*/build/
+
+# Android Local & Secrets
+local.properties
+.cxx/
+*.keystore
+*.jks
