@@ -51,17 +51,11 @@ class AuthViewModel : ViewModel() {
     }
 
     private fun validatePhone(number: String) {
-        val isValid = when (_viewState.value.selectedCountryCode) {
-            "+91" -> number.length == 10 && number.startsWithAny("6", "7", "8", "9")
-            "+44" -> number.length == 10
-            "+1" -> number.length == 10
-            else -> number.length in 7..15
-        }
+        val isValid = PhoneNumberValidator.isValid(
+            _viewState.value.selectedCountryCode,
+            number
+        )
         _viewState.update { it.copy(isPhoneValid = isValid) }
-    }
-
-    private fun String.startsWithAny(vararg prefixes: String): Boolean {
-        return prefixes.any { this.startsWith(it) }
     }
 
     private fun requestOtp() {

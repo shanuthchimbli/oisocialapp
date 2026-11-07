@@ -2,6 +2,7 @@ package chat.oi.feature.status
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import chat.oi.core.domain.model.PlainTextRules
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -52,15 +53,28 @@ class StatusViewModel : ViewModel() {
     fun handleIntent(intent: StatusIntent) {
         when (intent) {
             is StatusIntent.UpdateDraft -> {
-                // Strict 140-char limit (PRD-STAT-001 / FUNC-STAT-001)
-                val trimmed = intent.text.take(140)
-                _viewState.update { it.copy(statusDraft = trimmed) }
+                _viewState.update {
+                    it.copy(
+                        statusDraft = intent.text,
+                        errorMessage = if (
+                            intent.text.codePointCount(0, intent.text.length) >
+                            PlainTextRules.MAX_STATUS_CODE_POINTS
+                        ) {
+                            "ERR_INVALID_STATUS_LENGTH"
+                        } else if (!PlainTextRules.isPlainTextStatus(intent.text)) {
+                            "ERR_INVALID_STATUS_CONTENT"
+                        } else {
+                            null
+                        }
+                    )
+                }
             }
             is StatusIntent.SetEditing -> {
                 _viewState.update {
                     it.copy(
                         isEditing = intent.isEditing,
-                        statusDraft = if (intent.isEditing) it.myStatus?.text ?: "" else ""
+                        statusDraft = if (intent.isEditing) it.myStatus?.text ?: "" else "",
+                        errorMessage = null
                     )
                 }
             }
@@ -72,7 +86,16 @@ class StatusViewModel : ViewModel() {
 
     private fun saveStatus() {
         val draft = _viewState.value.statusDraft.trim()
-        if (draft.isEmpty()) return
+        val errorMessage = when {
+            draft.isBlank() || draft.codePointCount(0, draft.length) >
+                PlainTextRules.MAX_STATUS_CODE_POINTS -> "ERR_INVALID_STATUS_LENGTH"
+            !PlainTextRules.isPlainTextStatus(draft) -> "ERR_INVALID_STATUS_CONTENT"
+            else -> null
+        }
+        if (errorMessage != null) {
+            _viewState.update { it.copy(errorMessage = errorMessage) }
+            return
+        }
 
         val newStatus = StatusItem(
             id = UUID.randomUUID().toString(),

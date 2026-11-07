@@ -30,6 +30,7 @@ android {
 dependencies {
     implementation(project(":core:domain"))
 
+    implementation(libs.libphonenumber)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
