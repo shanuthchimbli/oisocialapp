@@ -36,12 +36,16 @@ class AuthViewModelTest {
     fun testUnitedKingdomPhoneNumberValidation() {
         viewModel.handleIntent(AuthIntent.UpdateCountryCode("+44"))
 
-        // Valid: 10 digits
+        // Valid UK mobile number
         viewModel.handleIntent(AuthIntent.UpdatePhoneNumber("7911123456"))
         assertTrue(viewModel.viewState.value.isPhoneValid)
 
-        // Invalid: 8 digits
+        // Invalid: too short
         viewModel.handleIntent(AuthIntent.UpdatePhoneNumber("79111234"))
+        assertFalse(viewModel.viewState.value.isPhoneValid)
+
+        // Invalid: national trunk prefix is not E.164
+        viewModel.handleIntent(AuthIntent.UpdatePhoneNumber("07911123456"))
         assertFalse(viewModel.viewState.value.isPhoneValid)
     }
 
@@ -52,6 +56,9 @@ class AuthViewModelTest {
         // Valid: 10 digits
         viewModel.handleIntent(AuthIntent.UpdatePhoneNumber("2025550143"))
         assertTrue(viewModel.viewState.value.isPhoneValid)
+
+        viewModel.handleIntent(AuthIntent.UpdatePhoneNumber("1234567890"))
+        assertFalse(viewModel.viewState.value.isPhoneValid)
     }
 
     @Test

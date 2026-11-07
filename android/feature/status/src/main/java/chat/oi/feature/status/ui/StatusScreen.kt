@@ -168,6 +168,14 @@ fun StatusScreen(
                         color = Color(0xFF94A3B8),
                         fontSize = 12.sp
                     )
+                    state.errorMessage?.let { error ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = error,
+                            color = Color(0xFFF87171),
+                            fontSize = 12.sp
+                        )
+                    }
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = state.statusDraft,
@@ -184,9 +192,10 @@ fun StatusScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(6.dp))
+                    val characterCount = state.statusDraft.codePointCount(0, state.statusDraft.length)
                     Text(
-                        text = "${state.statusDraft.length}/140",
-                        color = if (state.statusDraft.length >= 130) Color(0xFFF87171) else Color(0xFF64748B),
+                        text = "$characterCount/140",
+                        color = if (characterCount >= 130) Color(0xFFF87171) else Color(0xFF64748B),
                         fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.End)
                     )

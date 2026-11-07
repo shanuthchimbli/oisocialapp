@@ -118,6 +118,12 @@ class RetentionPurgeWorker(context: Context, params: WorkerParameters) : Corouti
 ```
 
 - Scheduled via `PeriodicWorkRequestBuilder<RetentionPurgeWorker>(24, TimeUnit.HOURS)` with constraints: `setRequiresDeviceIdle(true)` and `setRequiresBatteryNotLow(true)`.
+- The SQLCipher passphrase is generated randomly once, wrapped with an Android Keystore AES-GCM key, and reused by the application and retention worker. Never use a hard-coded passphrase or destructive migration fallback.
+
+### Input Validation
+
+- Phone numbers are parsed and validated with Google's `libphonenumber` for the selected launch jurisdiction and must round-trip to strict E.164 format.
+- Status text is limited to 140 Unicode code points and rejects blank content, HTML tags, Markdown links, and URLs. Messages are limited to 4,096 Unicode code points. Invalid drafts remain visible for correction and are not submitted.
 
 ---
 

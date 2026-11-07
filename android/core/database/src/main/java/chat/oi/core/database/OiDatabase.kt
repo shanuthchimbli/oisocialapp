@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.sqlite.db.SupportSQLiteDatabase
 import chat.oi.core.database.dao.BlockedUserDao
 import chat.oi.core.database.dao.ConversationDao
 import chat.oi.core.database.dao.MessageDao
@@ -42,8 +41,9 @@ abstract class OiDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: OiDatabase? = null
 
-        fun getInstance(context: Context, passphrase: ByteArray): OiDatabase {
+        fun getInstance(context: Context): OiDatabase {
             return INSTANCE ?: synchronized(this) {
+                val passphrase = DatabasePassphraseProvider.getOrCreate(context)
                 val factory = SupportFactory(passphrase)
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
@@ -51,7 +51,6 @@ abstract class OiDatabase : RoomDatabase() {
                     DB_NAME
                 )
                     .openHelperFactory(factory)
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

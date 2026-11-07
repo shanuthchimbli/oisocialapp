@@ -8,6 +8,7 @@ import chat.oi.core.database.entity.ConversationEntity
 import chat.oi.core.database.entity.MessageEntity
 import chat.oi.core.domain.model.DeliveryState
 import chat.oi.core.domain.model.Message
+import chat.oi.core.domain.model.PlainTextRules
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -75,9 +76,19 @@ class ChatViewModel(
                 }
             }
             is ChatIntent.UpdateDraft -> {
-                // Enforce 4,096-character limit (PRD-MSG-002)
-                val trimmed = intent.text.take(4096)
-                _viewState.update { it.copy(inputDraft = trimmed) }
+                _viewState.update {
+                    it.copy(
+                        inputDraft = intent.text,
+                        errorMessage = if (
+                            intent.text.codePointCount(0, intent.text.length) >
+                            PlainTextRules.MAX_MESSAGE_CODE_POINTS
+                        ) {
+                            "ERR_MESSAGE_TOO_LONG"
+                        } else {
+                            null
+                        }
+                    )
+                }
             }
             ChatIntent.SendMessage -> sendMessage()
             is ChatIntent.BlockContact -> blockUser(intent.participantId)
@@ -89,6 +100,10 @@ class ChatViewModel(
         val draft = _viewState.value.inputDraft.trim()
         val convId = _viewState.value.currentConversationId ?: return
         if (draft.isEmpty()) return
+        if (!PlainTextRules.isValidMessage(draft)) {
+            _viewState.update { it.copy(errorMessage = "ERR_MESSAGE_TOO_LONG") }
+            return
+        }
 
         // 1. Optimistic Local Rendering (<25ms budget per PERF-005)
         val optimisticMessage = Message(

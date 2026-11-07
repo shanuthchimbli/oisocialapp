@@ -17,10 +17,10 @@ interface MessageDao {
     @Query("""
         SELECT * FROM messages 
         WHERE conversation_id = :conversationId 
-          AND created_at >= :retentionCutoff
+          AND created_at >= ((strftime('%s', 'now') - 31536000) * 1000)
         ORDER BY created_at ASC
     """)
-    fun getMessages(conversationId: String, retentionCutoff: Long): Flow<List<MessageEntity>>
+    fun getMessages(conversationId: String): Flow<List<MessageEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: MessageEntity)
@@ -34,7 +34,12 @@ interface MessageDao {
     @Query("UPDATE messages SET delivery_state = :state, server_seq = :seq WHERE id = :messageId")
     suspend fun markSent(messageId: String, state: String, seq: Long)
 
-    @Query("SELECT * FROM messages WHERE delivery_state = 'SENDING' ORDER BY created_at ASC")
+    @Query("""
+        SELECT * FROM messages
+        WHERE delivery_state = 'SENDING'
+          AND created_at >= ((strftime('%s', 'now') - 31536000) * 1000)
+        ORDER BY created_at ASC
+    """)
     suspend fun getPendingMessages(): List<MessageEntity>
 
     /**

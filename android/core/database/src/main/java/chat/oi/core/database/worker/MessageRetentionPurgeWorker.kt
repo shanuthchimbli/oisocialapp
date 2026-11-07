@@ -1,6 +1,7 @@
 package chat.oi.core.database.worker
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -24,8 +25,7 @@ class MessageRetentionPurgeWorker(
             val retentionDeltaMs = 365L * 24 * 60 * 60 * 1000L
             val cutoffTimestamp = System.currentTimeMillis() - retentionDeltaMs
 
-            // Default internal key derivation; in production, injected via Keystore passphrase
-            val database = OiDatabase.getInstance(applicationContext, "oi_secure_root_key".toByteArray())
+            val database = OiDatabase.getInstance(applicationContext)
             
             val purgedRows = database.messageDao().deleteExpiredMessages(cutoffTimestamp)
             
@@ -34,19 +34,28 @@ class MessageRetentionPurgeWorker(
             }
 
             Result.success()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
+            Log.e(TAG, "Retention purge failed")
             Result.retry()
         }
     }
 
     companion object {
         private const val WORK_NAME = "OiMessageRetentionPurgeWorker"
+        private const val TAG = "OiRetentionPurge"
 
         fun schedule(context: Context) {
             val purgeRequest = PeriodicWorkRequestBuilder<MessageRetentionPurgeWorker>(
                 repeatInterval = 24,
                 repeatIntervalTimeUnit = TimeUnit.HOURS
-            ).build()
+            )
+                .setConstraints(
+                    androidx.work.Constraints.Builder()
+                        .setRequiresDeviceIdle(true)
+                        .setRequiresBatteryNotLow(true)
+                        .build()
+                )
+                .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,

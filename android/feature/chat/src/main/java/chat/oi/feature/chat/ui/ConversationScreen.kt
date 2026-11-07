@@ -92,6 +92,7 @@ fun ConversationScreen(
         bottomBar = {
             ChatInputBar(
                 draft = state.inputDraft,
+                errorMessage = state.errorMessage,
                 onDraftChanged = { onIntent(ChatIntent.UpdateDraft(it)) },
                 onSend = { onIntent(ChatIntent.SendMessage) }
             )
@@ -179,57 +180,67 @@ private fun DeliveryTickIndicator(state: DeliveryState) {
 @Composable
 private fun ChatInputBar(
     draft: String,
+    errorMessage: String?,
     onDraftChanged: (String) -> Unit,
     onSend: () -> Unit
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFF1E293B))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        // Strict text-only input: zero attachment clips, zero camera icons, zero audio mics
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .background(Color(0xFF0F172A), RoundedCornerShape(20.dp))
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        ) {
-            if (draft.isEmpty()) {
-                Text(
-                    text = "Text message (max 4,096 chars)...",
-                    color = Color(0xFF64748B),
-                    fontSize = 14.sp
-                )
-            }
-            BasicTextField(
-                value = draft,
-                onValueChange = onDraftChanged,
-                textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
-                cursorBrush = SolidColor(Color(0xFF38BDF8)),
-                modifier = Modifier.fillMaxWidth()
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = Color(0xFFF87171),
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = 6.dp)
             )
         }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(
-                    if (draft.isNotBlank()) Color(0xFF38BDF8) else Color(0xFF334155),
-                    RoundedCornerShape(20.dp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Strict text-only input: zero attachment clips, zero camera icons, zero audio mics
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color(0xFF0F172A), RoundedCornerShape(20.dp))
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                if (draft.isEmpty()) {
+                    Text(
+                        text = "Text message (max 4,096 chars)...",
+                        color = Color(0xFF64748B),
+                        fontSize = 14.sp
+                    )
+                }
+                BasicTextField(
+                    value = draft,
+                    onValueChange = onDraftChanged,
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                    cursorBrush = SolidColor(Color(0xFF38BDF8)),
+                    modifier = Modifier.fillMaxWidth()
                 )
-                .clickable(enabled = draft.isNotBlank()) { onSend() },
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "↑",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (draft.isNotBlank()) Color(0xFF0F172A) else Color(0xFF64748B)
-            )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        if (draft.isNotBlank()) Color(0xFF38BDF8) else Color(0xFF334155),
+                        RoundedCornerShape(20.dp)
+                    )
+                    .clickable(enabled = draft.isNotBlank()) { onSend() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "↑",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (draft.isNotBlank()) Color(0xFF0F172A) else Color(0xFF64748B)
+                )
+            }
         }
     }
 }
