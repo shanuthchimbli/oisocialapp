@@ -20,6 +20,17 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Oi"
+
+// Application Shell
 include(":app")
+
+// Core Foundation Modules
 include(":core:domain")
+include(":core:database")
+include(":core:crypto")
+include(":core:network")
+
+// Feature Modules
 include(":feature:auth")
+include(":feature:chat")
+include(":feature:status")

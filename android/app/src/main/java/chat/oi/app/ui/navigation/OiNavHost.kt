@@ -1,23 +1,9 @@
 package chat.oi.app.ui.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -28,89 +14,120 @@ import chat.oi.feature.auth.AuthSideEffect
 import chat.oi.feature.auth.AuthViewModel
 import chat.oi.feature.auth.OtpVerificationScreen
 import chat.oi.feature.auth.PhoneAuthScreen
+import chat.oi.feature.chat.ChatViewModel
+import chat.oi.feature.chat.ui.ChatListScreen
+import chat.oi.feature.chat.ui.ConversationScreen
+import chat.oi.feature.status.StatusViewModel
+import chat.oi.feature.status.ui.StatusScreen
 import java.net.URLDecoder
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+
+sealed class Screen(val route: String) {
+    data object PhoneAuth : Screen("auth/phone")
+    data object OtpVerification : Screen("auth/otp/{phone}") {
+        fun createRoute(phone: String): String = "auth/otp/${URLEncoder.encode(phone, "UTF-8")}"
+    }
+    data object ChatList : Screen("chats")
+    data object Status : Screen("status")
+    data object Conversation : Screen("conversation/{convId}/{username}") {
+        fun createRoute(convId: String, username: String): String = "conversation/$convId/$username"
+    }
+}
 
 @Composable
-fun OiNavHost(
-    modifier: Modifier = Modifier,
-    authViewModel: AuthViewModel = viewModel()
-) {
+fun OiNavHost() {
     val navController = rememberNavController()
-    val authState by authViewModel.viewState.collectAsState()
+    val authViewModel: AuthViewModel = viewModel()
+    val chatViewModel: ChatViewModel = viewModel()
+    val statusViewModel: StatusViewModel = viewModel()
 
     LaunchedEffect(Unit) {
         authViewModel.sideEffect.collect { effect ->
             when (effect) {
                 is AuthSideEffect.NavigateToOtp -> {
-                    val encodedPhone = URLEncoder.encode(effect.formattedPhone, StandardCharsets.UTF_8.toString())
-                    navController.navigate("otp/$encodedPhone")
+                    navController.navigate(Screen.OtpVerification.createRoute(effect.fullPhoneNumber))
                 }
                 is AuthSideEffect.NavigateToHome -> {
-                    navController.navigate("home") {
-                        popUpTo("phone_auth") { inclusive = true }
+                    navController.navigate(Screen.ChatList.route) {
+                        popUpTo(Screen.PhoneAuth.route) { inclusive = true }
                     }
                 }
-                is AuthSideEffect.ShowSnackbar -> {}
+                is AuthSideEffect.ShowToast -> {}
             }
         }
     }
 
     NavHost(
         navController = navController,
-        startDestination = "phone_auth",
-        modifier = modifier
+        startDestination = Screen.PhoneAuth.route
     ) {
-        composable("phone_auth") {
+        // 1. Phone Input Screen
+        composable(Screen.PhoneAuth.route) {
+            val state by authViewModel.viewState.collectAsState()
             PhoneAuthScreen(
-                state = authState,
+                state = state,
                 onIntent = authViewModel::handleIntent
             )
         }
 
+        // 2. OTP Verification Screen
         composable(
-            route = "otp/{phone}",
+            route = Screen.OtpVerification.route,
             arguments = listOf(navArgument("phone") { type = NavType.StringType })
         ) { backStackEntry ->
             val rawPhone = backStackEntry.arguments?.getString("phone") ?: ""
-            val decodedPhone = URLDecoder.decode(rawPhone, StandardCharsets.UTF_8.toString())
+            val fullPhone = URLDecoder.decode(rawPhone, "UTF-8")
+            val state by authViewModel.viewState.collectAsState()
 
             OtpVerificationScreen(
-                state = authState,
-                phoneNumber = decodedPhone,
+                fullPhoneNumber = fullPhone,
+                state = state,
                 onIntent = authViewModel::handleIntent
             )
         }
 
-        composable("home") {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF0F172A))
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Oi",
-                    fontSize = 42.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Authenticated as @${authState.authenticatedUser?.username ?: "user"}",
-                    fontSize = 16.sp,
-                    color = Color(0xFF38BDF8)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Zero media. One person, one account. Pure speed.",
-                    fontSize = 14.sp,
-                    color = Color(0xFF94A3B8)
-                )
-            }
+        // 3. Chat List Home Screen
+        composable(Screen.ChatList.route) {
+            val state by chatViewModel.viewState.collectAsState()
+            ChatListScreen(
+                state = state,
+                onIntent = chatViewModel::handleIntent,
+                onOpenConversation = { convId, username ->
+                    navController.navigate(Screen.Conversation.createRoute(convId, username))
+                },
+                onNavigateStatus = {
+                    navController.navigate(Screen.Status.route)
+                }
+            )
+        }
+
+        // 4. Conversation Screen (1:1 Text Only)
+        composable(
+            route = Screen.Conversation.route,
+            arguments = listOf(
+                navArgument("convId") { type = NavType.StringType },
+                navArgument("username") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            val state by chatViewModel.viewState.collectAsState()
+
+            ConversationScreen(
+                participantUsername = username,
+                state = state,
+                onIntent = chatViewModel::handleIntent,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 5. Status Screen (140-char text broadcast)
+        composable(Screen.Status.route) {
+            val state by statusViewModel.viewState.collectAsState()
+            StatusScreen(
+                state = state,
+                onIntent = statusViewModel::handleIntent,
+                onNavigateChats = { navController.popBackStack() }
+            )
         }
     }
 }
