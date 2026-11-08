@@ -2,7 +2,7 @@
 
 > **Purpose:** This is the plain-language, numbered plan for the Oi app. It is the source of truth for future implementation. The numbered items combine the current product documents with the later decisions you gave; items marked **Decision needed** are not settled.
 >
-> **Current status: Planning only. Do not start app development until you say to start.**
+> **Current status: Implementation in progress.** The user authorized building the app. Requirements marked **Decision needed** remain unresolved and must not be guessed.
 
 ## App and platforms
 
@@ -115,7 +115,7 @@
 89. Use the same versioned API contracts and core account/data rules for Flutter on Android and iOS.
 90. Use real SMS delivery in production; **Decision needed:** select launch countries and an SMS provider and supply its credentials through secure configuration.
 91. Test complete real flows—including OTP, session replacement, private groups, offline message sync, storage/backup rules, and Android/iOS API compatibility—before release.
-92. Keep this work at the planning stage until the user explicitly asks to begin implementation.
+92. Keep this work at the planning stage until the user explicitly asks to begin implementation. **The user has now explicitly authorized implementation; development is in progress.**
 
 ## How to maintain this plan
 

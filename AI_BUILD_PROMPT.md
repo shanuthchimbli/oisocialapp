@@ -4,9 +4,9 @@
 
 Read `HUMAN_PLAN.md` before doing any implementation. It contains the current 92-point product plan and labels unresolved choices as **Decision needed**. Follow its current decisions over older or conflicting technical documents in this repository. Do not silently restore requirements from those documents that HUMAN_PLAN.md has changed or marked undecided.
 
-## Current instruction: planning only
+## Current instruction: implementation authorized
 
-Do not write or modify application code, run implementation changes, select vendors, or create a release in response to this prompt alone. The user has asked to plan first. Wait until the user explicitly asks to start building.
+The user explicitly authorized implementation after the planning stage. Implement approved requirements and make progress on independent work. Do not choose vendors, hosting, production services, or high-impact **Decision needed** policies on the user's behalf. Keep unavailable production flows visibly blocked; never substitute mocks or local-only behavior as completed functionality.
 
 ## When the user authorizes implementation
 

@@ -61,10 +61,9 @@ class WelcomePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'This development build contains the Flutter app '
-                    'foundation only. Account creation, messaging, and other '
-                    'services are not available until their real backend '
-                    'integrations are implemented.',
+                    'Phone sign-in and profile setup use the real API '
+                    'contract. No backend, SMS delivery, face-liveness, or '
+                    'messaging service is included in this repository yet.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.onSurfaceVariant,
                       height: 1.5,
@@ -92,12 +91,12 @@ class _BuildStatusCard extends StatelessWidget {
         ? Icons.cloud_done_outlined
         : Icons.cloud_off_outlined;
     final title = isBackendConfigured
-        ? 'Backend endpoint configured'
+        ? 'API endpoint configured'
         : 'Backend not configured';
     final message = isBackendConfigured
-        ? 'An API address is set, but this build does not connect or '
-              'authenticate yet.'
-        : 'Sign-in and messaging are not active in this build.';
+        ? 'The app will verify the service when you sign in; a URL alone does '
+              'not prove the backend is available.'
+        : 'Sign-in needs an Oi API endpoint and a running backend.';
 
     return Container(
       width: double.infinity,

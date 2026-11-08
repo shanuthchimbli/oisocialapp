@@ -5,10 +5,11 @@ the same Dart application is structured to support iOS.
 
 ## Current status
 
-This repository currently contains the mobile app foundation only. It does not
-provide account creation, OTP delivery, face liveness, messaging, or a backend.
-The app states this clearly rather than treating a configured API address as
-an available service.
+The Flutter app now has a backend-facing phone OTP sign-in and session/profile
+flow. It does not include a backend server, SMS delivery provider, or face
+liveness integration. Those steps are blocked visibly; the app never treats a
+local or sample response as a verified production account. Private messaging,
+groups, status, and retention features are not implemented yet.
 
 ## Requirements
 
@@ -27,9 +28,18 @@ flutter build apk --debug
 ```
 
 An API base URL can be supplied with
-`--dart-define=OI_API_BASE_URL=https://api.example.com`.
-It is configuration only; no API requests or authentication are implemented
-yet. HTTPS is required except for loopback development URLs.
+`--dart-define=OI_API_BASE_URL=https://api.example.com`. The client uses the
+versioned API in [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md). HTTPS is
+required except for loopback development URLs. Without an available backend,
+network actions fail explicitly and do not claim success.
+
+The app stores the opaque session bearer only with the platform secure-storage
+plugin. The service must still implement server-authoritative single-device
+sessions, OTP validation/rate limits, account states, and token revocation.
+Client-side OTP countdowns do not replace backend enforcement. Android app
+backup is disabled so secure-storage keys cannot be restored without their
+device-bound key material; chat backup behavior remains undecided and no chat
+history is implemented.
 
 ## Release setup
 
