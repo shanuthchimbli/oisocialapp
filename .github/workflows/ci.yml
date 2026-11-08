@@ -1,63 +1,85 @@
-name: Oi Continuous Integration Pipeline
+name: Oi Flutter CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  # 1. Android Native Pipeline
-  android-build-and-test:
-    name: Android Verification & Tests
+  android:
+    name: Android analyze, test, and build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout Code Repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Grant Execute Permissions for Gradle Wrapper
-        run: chmod +x android/gradlew || true
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.1'
+          channel: stable
+          cache: true
 
-      - name: Run Android Unit Test Suite
-        working-directory: ./android
-        run: ./gradlew test --stacktrace || echo "Tests prepared for active runner"
+      - name: Resolve dependencies
+        run: flutter pub get
 
-  # 2. Go Backend Relay Pipeline
-  backend-build-and-test:
-    name: Backend Gateway & Database Verification
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+  ios:
+    name: iOS analyze, test, and build
+    runs-on: macos-latest
+    needs: android
+    timeout-minutes: 25
 
     steps:
-      - name: Checkout Code Repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Go 1.22
-        uses: actions/setup-go@v5
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          go-version: '1.22'
-          cache-dependency-path: backend/go.sum
+          flutter-version: '3.44.1'
+          channel: stable
+          cache: true
 
-      - name: Build Go WebSocket Relay Server
-        working-directory: ./backend
-        run: |
-          go mod tidy
-          go build -v -o /dev/null ./cmd/server/main.go
+      - name: Resolve dependencies
+        run: flutter pub get
 
-      - name: Verify PostgreSQL Schema Syntax
-        run: |
-          test -f backend/migrations/001_initial_schema.sql
-          echo "SQL Schema file verified"
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Test
+        run: flutter test
+
+      - name: Build iOS without code signing
+        run: flutter build ios --no-codesign
